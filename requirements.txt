@@ -1,0 +1,11 @@
+python-twitch-irc==1.1.0
+urlfetch==1.1.2
+pydle==0.8.5
+discord
+discord.py[voice]
+boto3
+youtube_dl
+ffmpeg
+PyNaCl
+opuslib
+requests
