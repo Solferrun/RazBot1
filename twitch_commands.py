@@ -29,7 +29,6 @@ def log_err(func):
             return func(*args, **kwargs)
         except Exception as e:
             print(f"Error in {func.__name__}:\n{format_exc()}")
-
     return wrapper
 
 
@@ -853,24 +852,6 @@ def exec_kp(msg):
     gaeting = gw2_tools.get_gaeting(region)
     insights = gw2_tools.get_insight_count(region)
     return f"[{region.upper()}] MS: {magnetite} / GC: {gaeting} / LI: {insights}"
-
-
-# @log_err
-# @cooldown(duration=3)
-# def exec_clears(msg):
-#     region = 'na'
-#     if msg.args:
-#         arg1 = msg.args[0].lower()
-#         if arg1 == 'world':
-#             if len(msg.args) > 1:
-#                 arg2 = msg.args[1].lower()
-#                 region = arg2 if arg2 == 'eu' else 'na'
-#             clears = gw2_tools.get_world_boss_clears(region)
-#             f"[{region.upper()}] Daily World Boss Clears: {clears}"
-#         elif arg1 == 'eu':
-#             region = 'eu'
-#     clears = gw2_tools.get_raid_boss_clears(region)
-#     return f"[{region.upper()}] Weekly Raid Boss Clears: {clears}"
 
 
 @log_err
