@@ -3,7 +3,7 @@ from asyncio import get_event_loop
 import youtube_dl
 from discord import PCMVolumeTransformer, FFmpegPCMAudio
 
-# Suppress noise about console usage from errors
+# Suppress noise in console about YTDL handled errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
 
