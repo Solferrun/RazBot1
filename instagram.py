@@ -25,18 +25,7 @@ def get_posts():
                   'caption': b.replace('\\n', '\n'),
                   'media_url': c}
                  for (a, b, c) in zip(post_codes, captions, media_urls))
-        # r = get(url)
-        # response = r.content.decode('utf8')
-        # post_codes = findall("/p\\\\/(.*?)\\\\/", response)
-        # captions = findall("caption\":\"(.*?)\",\"media_url", response)
-        # media_urls = findall("media_url\":\"(.*?)\",\"id", response)
-        # posts = ({'post_code': a,
-        #           'caption': b.replace('\\n', '\n'),
-        #           'media_url': c.replace('\\', '')}
-        #          for (a, b, c) in zip(post_codes, captions, media_urls))
         return posts
-    except TypeError:
-        return None
     except Exception:
         print_exc()
         return None
