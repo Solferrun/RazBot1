@@ -37,19 +37,14 @@ def log_err(func):
     return wrapper
 
 
-splash_url_start = "https://i.imgur.com/rigtgGR.png"
-splash_url_over = "https://i.imgur.com/EFfWimV.png"
-
-
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         load_dict('item_data')
         self.read_buffer = ""
-        self.chat_color = cycle([
-            "Blue", "BlueViolet", "CadetBlue", "Chocolate", "Coral", "DodgerBlue", "Firebrick",
-            "GoldenRod", "Green", "HotPink", "OrangeRed", "Red", "SeaGreen", "SpringGreen", "YellowGreen"])
+        self.chat_color = cycle(["Blue", "BlueViolet", "CadetBlue", "Chocolate", "Coral", "DodgerBlue", "Firebrick", "GoldenRod", 
+                                 "Green", "HotPink", "OrangeRed", "Red", "SeaGreen", "SpringGreen", "YellowGreen"])
         self.name = environ["BOT_NAME"]
         self.current_song = None
         self.default_voice_channel = int(environ.get('DISCORD_VOICE_CHANNEL'))
@@ -58,6 +53,8 @@ class Bot(commands.Bot):
         self.voice_channel = self.get_channel(voice_channel)
         self.last_promote = dt.now().strftime("%D:%H:%M")
         self.welcome_message = value_set.BOT_OPTIONS.get('welcome_message')
+        self.splash_url_start = "https://i.imgur.com/rigtgGR.png"
+        self.splash_url_over = "https://i.imgur.com/EFfWimV.png"
 
     @log_err
     async def disconnect_all_voice(self):
@@ -135,11 +132,11 @@ class Bot(commands.Bot):
             self.last_promote = now.strftime("%D:%H:%M")
             await self.promote_channel(now)
 
-        # PING BIG DADDY TWITCH
+        # Ping twitch
         try:
             twitch_socket.current_socket.send("PING :tmi.twitch.tv\r\n".encode('UTF-8'))
         except BrokenPipeError:
-            print(f"!! Big Daddy Twitch response failed: {format_exc()}\nReconnecting...")
+            print(f"!! Twitch response failed: {format_exc()}\nReconnecting...")
             while not join_room(twitch_socket.current_socket):
                 ">> Twitch room join failed. Retrying..."
             print("--Connected to Twitch--")
@@ -155,16 +152,6 @@ class Bot(commands.Bot):
             print(">> Stream went offline")
             set_gw2_dyno_state(set_active=False)
             await self.announce_stream_end()
-
-        # Check/update stream title
-        # if is_online:
-        #     stream_title = api_fetch('title')
-        #     stream_channel = self.get_channel(int(environ['DISCORD_STREAMING_CHANNEL']))
-        #     messages = await stream_channel.history(limit=20).flatten()
-        #     stream_message = discord.utils.get(messages, id=value_set.BOT_OPTIONS.get('stream_message'))
-        #     if stream_message.embeds and stream_message.embeds[0].description != stream_title:
-        #         await self.update_stream_message(stream_message, stream_title)
-
         await asyncio.sleep(1)
 
     @log_err
@@ -178,7 +165,7 @@ class Bot(commands.Bot):
                                   description=stream_title,
                                   color=0x463aff)
             embed.add_field(name='Come join us!', value="https://www.twitch.tv/maerictv")
-            embed.set_image(url=splash_url_start)
+            embed.set_image(url=self.splash_url_start)
             stream_channel = self.get_channel(int(environ['DISCORD_STREAMING_CHANNEL']))
             stream_message = await stream_channel.send(content="@here", embed=embed)
             value_set.BOT_OPTIONS['stream_message'] = stream_message.id
@@ -206,7 +193,7 @@ class Bot(commands.Bot):
                                   description=stream_title,
                                   color=0x463aff)
             embed.add_field(name="But there's always the vod:", value=vod_url)
-            embed.set_image(url=splash_url_over)
+            embed.set_image(url=self.splash_url_over)
             stream_channel = self.get_channel(int(environ['DISCORD_STREAMING_CHANNEL']))
             messages = await stream_channel.history(limit=20).flatten()
             old_message = discord.utils.get(messages, id=value_set.BOT_OPTIONS.get('stream_message'))
@@ -229,9 +216,9 @@ class Bot(commands.Bot):
     async def parse_messages(self):
         """Read and parse received Twitch messages"""
         try:
-            r = twitch_socket.current_socket.recv(2056)
-            if r:
-                self.read_buffer = self.read_buffer + r.decode('UTF-8')
+            recieved = twitch_socket.current_socket.recv(2056)
+            if recieved:
+                self.read_buffer = self.read_buffer + recieved.decode('UTF-8')
                 temp = self.read_buffer.split("\n")
                 self.read_buffer = temp.pop()
 
@@ -248,23 +235,22 @@ class Bot(commands.Bot):
                     if "PING :tmi.twitch.tv" in line:
                         twitch_socket.current_socket.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
                         break
-                    elif "PONG tmi.twitch.tv" not in line:
-                        if user:
-                            print(f"{display_name}: {message}")
+                    elif "PONG tmi.twitch.tv" not in line and user:
+                        print(f"{display_name}: {message}")
 
-                    # CLIP SENDING
+                    # CLIP FORWARDING
                     if "clips.twitch.tv/" in line or "twitch.tv/maerictv/clip/" in line:
                         print(">> Forwarding clip to discord...")
                         clip_channel = self.get_channel(int(environ['DISCORD_CLIPS_CHANNEL']))
                         await clip_channel.send(f"**Clip shared to Twitch chat by {display_name}!**\n {get_clip_id(message)}")
 
-                    # ROULETTE ENTER
+                    # ROULETTE ENTER PHRASE HANDLING
                     if roulette.round_obj and message.strip() == roulette.round_obj.entry_phrase:
                         if display_name not in roulette.round_obj.users:
                             roulette.round_obj.add(display_name)
                             await self.twitch_send(f"{display_name} has entered the roulette!")
 
-                    # SONG REQUEST SENDING
+                    # SONG REQUEST HANDLING
                     elif message_parts['yt_redeem']:
                         print(f">> YT redeem detected: {message}")
                         req_info = await YTDLSource.get_info(message)
@@ -291,7 +277,7 @@ class Bot(commands.Bot):
                     elif message.startswith('!'):
                         msg_split = message.split(' ', 1)
 
-                        # GET ARGS
+                        # GET ARGUMENTS
                         args = None
                         args_string = None
                         if len(msg_split) > 1:
@@ -356,7 +342,7 @@ class Bot(commands.Bot):
 
     @log_err
     async def background_tasks(self):
-        """Tasks to be performed repeatedly"""
+        """Run looping tasks"""
         await self.wait_until_ready()
         while not self.is_closed():
             try:
@@ -409,7 +395,7 @@ class Bot(commands.Bot):
                 continue
 
     async def channel_connect(self):
-        """Connect to a channel"""
+        """Connect to a voice channel"""
         voice_client = self.voice_clients[0] if self.voice_clients else None
         if voice_client:
             return await voice_client.move_to(self.voice_channel)
@@ -453,23 +439,11 @@ class Bot(commands.Bot):
                 self.get_voice().stop()
                 await self.disconnect_all_voice()
             await self.clear_files()
-        except DownloadError:
-            print(format_exc())
-            value_set.BOT_OPTIONS['player_enabled'] = False
-            await self.dj_send("_YouTube is denying requests! Disabling player. :(_")
         except DurationError:
             print(f"!! HybridBot::play_next_song: {format_exc()}")
             await self.twitch_send(f"\"{self.current_song}\" was over 10 minutes long! So I skipped it. razBlank")
         except Exception:
             print(f"!! Error while playing {self.current_song} HybridBot::play_next_song: {format_exc()}")
-        # self.dump_to_file('song.html', value_set.CURRENT_PLAYER.title)
-
-    def reboot_app(self):
-        app_id = "c756f23c-f5e5-4d57-8df3-9418f44295b5"
-        url = f"https://api.heroku.com/apps/{app_id}/dynos"
-        headers = {"Accept": "application/vnd.heroku+json; version=3.cedar-acm",
-                   "Authorization": "Bearer d95890f2-47ef-4ba7-bfdc-4fee4d21476e"}
-        requests.delete(url, headers=headers)
 
     def dump_to_file(self, file_name, text):
         """Dump string to file"""
@@ -487,7 +461,6 @@ bot = Bot(command_prefix=commands.when_mentioned_or("DJ "),
 @log_err
 @bot.event
 async def on_ready():
-    """On discord connect"""
     await bot.disconnect_all_voice()
     value_set.MUSIC_QUEUE = load_dict('music_queue')
     print('--Connected to Discord--')
