@@ -1,5 +1,5 @@
 import json
-from os import path
+from os import path, environ
 from requests import patch, get
 # from urllib import request
 # import asyncio
@@ -18,12 +18,12 @@ region_key = {
 
 def set_gw2_dyno_state(set_active):
     state = 1 if set_active else 0
-    app_id = "c756f23c-f5e5-4d57-8df3-9418f44295b5"
-    proc_id = "f547e8d1-deae-4ba5-a377-8143034e6a73"
+    app_id = environ["heroku_app_id"]
+    proc_id = environ["heroku_proc_id"]
     url = f"https://api.heroku.com/apps/{app_id}/formation/{proc_id}"
     payload = {"quantity": state, "size": "Free", "type": "NightMaeric"}
     headers = {"Accept": "application/vnd.heroku+json; version=3",
-               "Authorization": "Bearer d95890f2-47ef-4ba7-bfdc-4fee4d21476e"}
+               "Authorization": f"Bearer {environ["heroku_oauth"]}"}
 
     patch(url, data=json.dumps(payload), headers=headers).json()
 
